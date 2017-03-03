@@ -37,7 +37,7 @@ theta0 = {'Uranus': 205.640,
 distance = {'Uranus': 19.1914,
             'Neptune': 30.0611,
 }
-# mass in AU
+# mass in solar masses
 mass = {'Sun': 1.,
         'Uranus': 4.366244e-5,
         'Neptune': 5.151389e-5,
@@ -70,7 +70,7 @@ def initial_position(angle, distance):
 
 def initial_velocity(angle, distance, period):
     x = np.deg2rad(angle)
-    r = distance * np.array([np.cos(x), np.sin(x)])
+    r = distance * np.array([-np.sin(x), np.cos(x)])
     return (2*np.pi*r)/period
 
 def F_gravity(r, m, M):
@@ -90,7 +90,7 @@ def F_gravity(r, m, M):
     """
     rr = np.sum(r*r)
     rhat = r/np.sqrt(rr)
-    return -(G*m*M/rr)*rhat
+    return -(G_gravity*m*M/rr)*rhat
 
 
 def omega(v, r):
@@ -148,23 +148,56 @@ def integrate_orbits(dt=0.1, t_max=320, coupled=True):
     nsteps = int(t_max/dt)
     time = dt * np.arange(nsteps)
 
-
     # shape = (step, planet, x/y)
     r = np.zeros((nsteps, 2, 2))
     v = np.zeros_like(r)
 
+    # set initial position for both planets
     r[0, 0, :] = initial_position(theta0['Uranus'], distance['Uranus'])
     r[0, 1, :] = initial_position(theta0['Neptune'], distance['Neptune'])
 
-    v[0, 0, :] = initial_velocity(angle['Uranus'], distance['Uranus'], period['Uranus'])
-    v[0, 1, :] = initial_velocity(angle['Neptune'], distance['Neptune'], period['Neptune'])
+    # set initial velocity for both planets
+    v[0, 0, :] = initial_velocity(theta0['Uranus'], distance['Uranus'], period['Uranus'])
+    v[0, 1, :] = initial_velocity(theta0['Neptune'], distance['Neptune'], period['Neptune'])
 
-    F_us = -(G*mass['Uranus']*mass['Sun']/(distance['Uranus']**2)
-    F_ns = -(G*mass['Neptune']*mass['Sun']/(distance['Neptune']**2)
-    F_un = -(G*mass['Uranus']*mass['Neptune']/((distance['Uranus']-distance['Neptune'])**2)
-    F_U = F_us + F_un
-    F_N = F_ns + F_un
-    F_S = F_us + F_ns
+    F_sn = F_gravity(distance['Neptune'], mass['Neptune'], mass['Sun'])
+    F_su = F_gravity(distance['Uranus'], mass['Uranus'], mass['Sun'])
+    F_un = F_gravity(distance['Uranus'] - distance['Neptune'], mass['Uranus'], mass['Neptune'])
+    F_uranus = F_su + F_un
+    F_neptune = F_sn + F_un
+
+    if coupled==False:
+        #verlet for Neptune
+        for i in range(nsteps-1):
+            vhalf = v[i, 0, :] + dt/2 * F_sn/mass['Uranus']
+            r[i+1, 0, :] = r[i, 0, :] + dt*vhalf
+            F_sndt = F_gravity(r[i+1, 0, :], mass['Uranus'], mass['Sun'])
+            v[i+1, 0, :] = vhalf + dt/2 * F_sndt/mass['Uranus']
+            F_sn = F_sndt
+
+        #verlet for Uranus
+        for i in range(nsteps-1):
+            vhalf = v[i, 1, :] + dt/2 * F_su/mass['Neptune']
+            r[i+1, 1, :] = r[i, 1, :] + dt*vhalf
+            F_sudt = F_gravity(r[i+1, 1, :], mass['Neptune'], mass['Sun'])
+            v[i+1, 1, :] = vhalf + dt/2 * F_sudt/mass['Neptune']
+            F_su = F_sudt
+    else:
+        #verlet for Neptune
+        for i in range(nsteps-1):
+            vhalf = v[i, 1, :] + dt/2 * F_neptune/mass['Neptune']
+            r[i+1, 1, :] = r[i, 1, :] + dt*vhalf
+            F_neptunedt = F_gravity(r[i+1, 1, :], mass['Neptune'], mass['Sun'])
+            v[i+1, 1, :] = vhalf + dt/2 * F_neptunedt/mass['Neptune']
+            F_neptune = F_neptunedt
+
+        #verlet for Uranus
+        for i in range(nsteps-1):
+            vhalf = v[i, 0, :] + dt/2 * F_uranus/mass['Uranus']
+            r[i+1, 0, :] = r[i, 0, :] + dt*vhalf
+            F_uranusdt = F_gravity(r[i+1, 0, :], mass['Uranus'], mass['Sun'])
+            v[i+1, 0, :] = vhalf + dt/2 * F_uranusdt/mass['Uranus']
+            F_uranus = F_uranusdt
 
     return time, r, v
 
@@ -197,13 +230,7 @@ if __name__ == "__main__":
     vU = v[:, 0]
     omegaU = omega(vU, rU)
 
-    #----------
-    # IMPLEMENT
-    #
-    raise NotImplementedError
-    DeltaOmegaU = None
-    #
-    #---------
+    DeltaOmegaU = omegaU - omegaU0
 
     # plot orbits
     fig_orbits = "uranus_neptune_orbits.pdf"

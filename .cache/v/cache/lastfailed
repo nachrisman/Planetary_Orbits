@@ -1,0 +1,5 @@
+{
+  "test_outerplanets.py::test_DeltaOmega": true, 
+  "test_outerplanets.py::test_neptune_initial_conditions": true, 
+  "test_outerplanets.py::test_uranus_initial_conditions": true
+}

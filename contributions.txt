@@ -5,4 +5,8 @@ Chrisman, Nate
 Crawford, Kelsie
 
 
-stuff goes here
+We did the driver and navigator code writing with Nate as the driver and Brian and Kelsie as navigators. Brian and Nate worked on the velocity verlet integrator.
+
+Brian worked on fixing bugs in the code to try to pass all the tests. Kelsie also worked on bug fixing.
+
+Kelsie worked on the hw05 file and getting the code to import properly.

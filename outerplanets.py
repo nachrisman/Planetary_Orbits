@@ -162,7 +162,7 @@ def integrate_orbits(dt=0.1, t_max=320, coupled=True):
 
     F_sn = F_gravity(distance['Neptune'], mass['Neptune'], mass['Sun'])
     F_su = F_gravity(distance['Uranus'], mass['Uranus'], mass['Sun'])
-    F_un = F_gravity(distance['Uranus'] - distance['Neptune'], mass['Uranus'], mass['Neptune'])
+    F_un = F_gravity(distance['Neptune'] - distance['Uranus'], mass['Neptune'], mass['Uranus'])
     F_uranus = F_su + F_un
     F_neptune = F_sn + F_un
 
